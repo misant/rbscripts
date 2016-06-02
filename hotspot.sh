@@ -3,6 +3,7 @@
 ssh admin@94.200.202.210 ip hotspot host print | grep "3h" | while read -r line ; do
     echo "Processing $line"
     dev_mac=`echo $line | awk '{print($3)}'`
+	echo $dev_mac
 #    proc_time=`echo $line | awk '{print($9)}'`
 #    cur_time=`date +%H%M`
 #    echo "Now is $cur_time ID = $proc_id, started at ${proc_time//:}"
