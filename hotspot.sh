@@ -1,18 +1,35 @@
 #!/bin/sh
 
-ssh admin@94.200.202.210 ip hotspot host print | grep "3h" | while read -r line ; do
-    echo "Processing $line"
-    dev_mac=`echo $line | awk '{print($3)}'`
-	echo $dev_mac
-#    proc_time=`echo $line | awk '{print($9)}'`
-#    cur_time=`date +%H%M`
-#    echo "Now is $cur_time ID = $proc_id, started at ${proc_time//:}"
-#    if (( $cur_time - ${proc_time//:} > 5 )); then
-#        echo "Need to kill, $cur_time and ${proc_time//:}"
-#        kill -9 $proc_id
-#        echo "Process $proc_id killed"
-#    else
-#        echo "No need to kill, $cur_time and ${proc_time//:}"
-#    fi
-done
+#ssh admin@94.200.202.210 ip hotspot host print | grep "3h" | while read -r line ; do
+#rm ./output
+CurrentCalc=`date +%s`
+echo $CurrentCalc
+HotspotIntName=`cat hotspot | grep m | awk '{print($3)}'`
+echo "Hotspot interface name = $HotspotIntName"
+HotspotIntMAC=`cat interfaces | grep -A 1 $HotspotIntName | awk '{print($1)}' | cut -d= -f2`
+HotspotIntMAC=( $HotspotIntMAC )
+HotspotIntMAC=${HotspotIntMAC[1]}
+echo "Hotspot interface mac = $HotspotIntMAC" >> output
 
+cat active | grep h | while read -r line ; do
+    DeviceIP=`echo $line | awk '{print($4)}'`
+    DeviceUptime=`echo $line | awk '{print($5)}'`
+    UptimeH=`echo $DeviceUptime | awk -F'[h]' '{print $1}'`
+    if [ "$UptimeH" == "$DeviceUptime" ]; then
+        let UptimeH=0
+        UptimeM=`echo $DeviceUptime | awk -F'[m]' '{print $1}'`
+        UptimeS=`echo $DeviceUptime | awk -F'[s]' '{print $1}'| awk -F'[m]' '{print $2}'`
+    else
+        UptimeM=`echo $DeviceUptime | awk -F'[m]' '{print $1}'| awk -F'[h]' '{print $2}'`
+        UptimeS=`echo $DeviceUptime | awk -F'[s]' '{print $1}'| awk -F'[m]' '{print $2}'`
+    fi
+    let UptimeCalc="$UptimeH * 3600 + $UptimeM * 60 + $UptimeS"
+    let ConnCalc="$CurrentCalc - $UptimeCalc"
+    ConnTime=`date -u -d @${ConnCalc}`
+    echo $ConnTime
+    DeviceMAC=`cat hosts | grep "$DeviceIP " | awk '{print($3)}'`
+    echo "Device IP = $DeviceIP"
+    echo "Device uptime = $DeviceUptime"
+    echo "Device MAC = $DeviceMAC"
+    echo "$HotspotIntMAC,$DeviceMAC,$DeviceUptime,$ConnTime" >> output
+done
