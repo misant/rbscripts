@@ -40,3 +40,4 @@ cat hosts | grep 5m | while read -r line ; do
     echo "Device MAC = $DeviceMAC"
     echo "Device MAC = $ConnStatus"
     echo "$HotspotIntMAC,$DeviceMAC,$ConnStatus,unautharised,$CurrentTime" >> output
+done
