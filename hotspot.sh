@@ -94,7 +94,7 @@ done
 cat hosts | grep 5m | while read -r line ; do
     DeviceMAC=`echo $line | awk '{print($3)}'`
     ConnStatus=`echo $line | awk '{print($2)}'`
-    echo "$HotspotIntMAC,$DeviceMAC,$ConnStatus,unautharized,$CurrentTime" >> output
+    echo "$HotspotIntMAC,$DeviceMAC,$ConnStatus,unauthorised,$CurrentTime" >> output
 done
 done
 
