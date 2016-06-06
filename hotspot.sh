@@ -1,11 +1,25 @@
 #!/bin/bash
+#################################
+#       Bekhterev Evgeniy       #
+#       ver 0.1                 #
+#       06.06.2016              #
+#       www.bekhterev.me        #
+#################################
+# output fields:
+#hotspot mac, device mac, connection uptime/status, start time of connection, time of check
 
+#Getting current date and time in seconds and in human readable formats
 CurrentCalc=`date +%s`
 CurrentTime=`date +%Y-%m-%d:%H:%M:%S`
 
-cat list.txt | while read -r line ; do
+#Getting ip of routerboard from list and gathering data
+#Doing that for every ip, one ip per line
+cat routerboards | while read -r line ; do
+
+#If there are no known macs list - create empty file
 [[ -f mac ]] || touch mac
 
+#If we have entry in known mac list for current ip, get it from file, if not older then 24h
 if grep -q $line "mac"; then
     ssh admin@$line ip hot host pr > hosts
     ssh admin@$line ip hot active pr > active
@@ -16,16 +30,13 @@ if grep -q $line "mac"; then
         ssh admin@$line ip hot print > hotspot
         ssh admin@$line inter pri deta > interfaces
         HotspotIntName=`cat hotspot | grep m | awk '{print($3)}'`
-        echo "Too old!"
         HotspotIntMAC=`cat interfaces | grep -A 1 $HotspotIntName | awk '{print($1)}' | cut -d= -f2`
         HotspotIntMAC=( $HotspotIntMAC )
         HotspotIntMAC=${HotspotIntMAC[1]}
         sed -i -e "/$line/d" ./mac
         echo "$line $HotspotIntMAC $CurrentTime $CurrentCalc" >> mac
-
-    else
-        echo "Mac is already known, $HotspotIntMAC was written $MACDate"
     fi
+#Otherwise get all data, including hostpot mac
 else
     ssh admin@$line ip hot host pr > hosts
     ssh admin@$line ip hot active pr > active
@@ -33,22 +44,16 @@ else
     ssh admin@$line inter pri deta > interfaces
 
     HotspotIntName=`cat hotspot | grep m | awk '{print($3)}'`
-    echo "Hotspot interface name = $HotspotIntName"
     HotspotIntMAC=`cat interfaces | grep -A 1 $HotspotIntName | awk '{print($1)}' | cut -d= -f2`
     HotspotIntMAC=( $HotspotIntMAC )
     HotspotIntMAC=${HotspotIntMAC[1]}
     echo "$line $HotspotIntMAC $CurrentTime $CurrentCalc" >> mac
-    echo "Mac is uknown"
-
 fi
 
-echo "Active connections" >> output
+
 cat active | grep h | while read -r line ; do
     DeviceIP=`echo $line | awk '{print($4)}'`
     DeviceUptime=`echo $line | awk '{print($5)}'`
-    echo "DeviceUptime = $DeviceUptime"
-
-
 
     if [[ $DeviceUptime == *"h"* ]];
     then
@@ -80,23 +85,18 @@ cat active | grep h | while read -r line ; do
     let UptimeCalc="$UptimeH * 3600 + $UptimeM * 60 + $UptimeS"
     let ConnCalc="$CurrentCalc - $UptimeCalc"
     ConnTime=`date -u -d @${ConnCalc} +%Y-%m-%d:%H:%M:%S`
-    echo $ConnTime
     DeviceMAC=`cat hosts | grep "$DeviceIP " | awk '{print($3)}'`
-    echo "Device IP = $DeviceIP"
-    echo "Device uptime = $DeviceUptime"
-    echo "Device MAC = $DeviceMAC"
     echo "$HotspotIntMAC,$DeviceMAC,$DeviceUptime,$ConnTime,$CurrentTime" >> output
 done
-echo "Not authenticated" >> output
+
 cat hosts | grep 5m | while read -r line ; do
     DeviceMAC=`echo $line | awk '{print($3)}'`
     ConnStatus=`echo $line | awk '{print($2)}'`
-    echo "Device MAC = $DeviceMAC"
-    echo "Device MAC = $ConnStatus"
     echo "$HotspotIntMAC,$DeviceMAC,$ConnStatus,unautharized,$CurrentTime" >> output
 done
 done
 
+#Delete all temporary files
 rm -f interfaces
 rm -f hotspot
 rm -f active
