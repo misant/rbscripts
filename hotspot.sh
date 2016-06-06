@@ -10,16 +10,17 @@
 # output fields:
 #hotspot mac, device mac, connection uptime/status, start time of connection, time of check
 
-#Getting current date and time in seconds and in human readable formats
-CurrentCalc=`date +%s`
-CurrentTime=`date +%Y-%m-%d:%H:%M:%S`
-
 #Getting ip of routerboard from list and gathering data
 #Doing that for every ip, one ip per line
 cat routerboards | while read -r line ; do
 
 #If there are no known macs list - create empty file
 [[ -f mac ]] || touch mac
+
+#Getting current date and time in seconds and in human readable formats
+CurrentCalc=`date +%s`
+CurrentTime=`date +%Y-%m-%d:%H:%M:%S`
+
 
 #If we have entry in known mac list for current ip, get it from file, if not older then 24h
 if grep -q $line "mac"; then
