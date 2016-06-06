@@ -5,6 +5,8 @@
 #       06.06.2016              #
 #       www.bekhterev.me        #
 #################################
+# script connects via ssh to remote mikrotik listed in ./routerboards file
+# and outputs data collectd
 # output fields:
 #hotspot mac, device mac, connection uptime/status, start time of connection, time of check
 
