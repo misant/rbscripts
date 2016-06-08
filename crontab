@@ -1,0 +1,1 @@
+*/5 * * * * /root/script/hotspot.sh >> /root/cron.log 2>&1
