@@ -1,1 +1,3 @@
-*/5 * * * * /root/script/hotspot.sh >> /root/cron.log 2>&1
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+*/5 * * * * /srv/hotspot/hotspot.sh >> /srv/hotspot/cron.log 2>&1
+
