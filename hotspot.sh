@@ -53,7 +53,7 @@ function get_hotspot_mac {
 function get_data {
     /bin/echo "Getting $1 hotspot active devices"
     /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot active pr > /root/script/active
-    /bin/echo "Getiing $1 /root/script/hotspot hosts details"
+    /bin/echo "Getting $1 hotspot hosts details"
     /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot host pr > /root/script/hosts
 }
 
@@ -110,12 +110,14 @@ function proc_hosts {
 PingResult=`/bin/ping -c 5 10.0.0.1 | /bin/grep loss | /usr/bin/awk '{print $4}'`
 if [ $PingResult -le 2 ]
    then
+        echo "$PingResult is not ok, restarting pptp"
         /usr/bin/poff hotspot
-        /usr/bin/pon hotspot
+        /usr/bin/pon /etc/ppp/peers/hotspot
         /sbin/route add -net 10.0.0.0/8 ppp0
-    sleep 5
+    /bin/sleep 5
 fi
 
+echo "$PingResult is ok"
 
 for RBIP in $(/bin/cat /root/script/rb); do
 
@@ -138,8 +140,10 @@ for RBIP in $(/bin/cat /root/script/rb); do
 
 done
 
+echo "-----------------------------------------"
+
 #Delete temp files
-rm -f /root/script/hotspot
-rm -f /root/script/interfaces
-rm -f /root/script/active
-rm -f /root/script/hosts
+/bin/rm -f /root/script/hotspot
+/bin/rm -f /root/script/interfaces
+/bin/rm -f /root/script/active
+/bin/rm -f /root/script/hosts
