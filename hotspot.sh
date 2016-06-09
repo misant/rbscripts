@@ -135,10 +135,10 @@ function proc_hosts {
         DeviceMAC=`/bin/echo $line | /usr/bin/awk '{print($3)}'`
         ConnStatus=`/bin/echo $line | /usr/bin/awk '{print($2)}'`
         if [[ ! $DeviceMAC ]] ; then
-            echo "Error getting $DeviceIP MAC or something went wrong, active device"
+            echo "Error getting $DeviceIP MAC or something went wrong, nonactive device"
         fi
         if [[ ! $HotspotIntMAC ]] ; then
-            echo "Error getting $1 MAC or something went wrong, active device"
+            echo "Error getting $1 MAC or something went wrong, nonactive device"
         fi
         if [[  $DeviceMAC ]] || [[ $HotspotIntMAC ]]; then
             /bin/echo "$HotspotIntMAC,$DeviceMAC,$ConnStatus,unauthorised,$CurrentTime" >> /srv/hotspot/$OutputName.txt
