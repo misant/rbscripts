@@ -5,60 +5,61 @@
 #       07.06.2016              #
 #       www.bekhterev.me        #
 #################################
-# script connects via ssh to remote mikrotik listed in .//root/script/rb file
+# script connects via ssh to remote mikrotik listed in .//srv/hotspot/rb file
 # and outputs data collected
 # output fields:
 #hotspot mac, device mac, connection uptime/status, start time of connection, time of check
 
 function get_hotspot_mac {
     #If there are no known macs list - create empty file
-    [[ -f /root/script/mac ]] || /bin/touch /root/script/mac
+    [[ -f /srv/hotspot/mac ]] || /bin/touch /srv/hotspot/mac
 
-    if /bin/grep -q "$1 " "/root/script/mac"; then
+    if /bin/grep -q "$1 " "/srv/hotspot/mac"; then
         /bin/echo "Known IP $1, lets check how its old"
-        HotspotIntMAC=`/bin/grep -m 1 "$1 " "/root/script/mac" | /usr/bin/awk '{print($3)}'`
-        MACDate=`/bin/grep -m 1 "$1 " "/root/script/mac" | /usr/bin/awk '{print($4)}'`
-        MACSecs=`/bin/grep -m 1 "$1 " "/root/script/mac" | /usr/bin/awk '{print($5)}'`
+        HotspotIntMAC=`/bin/grep -m 1 "$1 " "/srv/hotspot/mac" | /usr/bin/awk '{print($3)}'`
+        MACDate=`/bin/grep -m 1 "$1 " "/srv/hotspot/mac" | /usr/bin/awk '{print($4)}'`
+        MACSecs=`/bin/grep -m 1 "$1 " "/srv/hotspot/mac" | /usr/bin/awk '{print($5)}'`
         if (( "$CurrentCalc - $MACSecs" > "86400" )); then
-            /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot print > /root/script/hotspot
-            /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 inter pri deta > /root/script/interfaces
-            /bin/cat /root/script/hotspot | /bin/grep m | /usr/bin/awk '{print($3)}' | while read -r line; do
+            /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot print > /srv/hotspot/hotspot
+            /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 inter pri deta > /srv/hotspot/interfaces
+            /bin/cat /srv/hotspot/hotspot | /bin/grep m | /usr/bin/awk '{print($3)}' | while read -r line; do
                 HotspotIntName=$line
-                HotspotIntMAC=`/bin/cat /root/script/interfaces | /bin/grep -A 1 $HotspotIntName | /usr/bin/awk '{print($1)}' | cut -d= -f2`
+                HotspotIntMAC=`/bin/cat /srv/hotspot/interfaces | /bin/grep -A 1 $HotspotIntName | /usr/bin/awk '{print($1)}' | cut -d= -f2`
                 HotspotIntMAC=( $HotspotIntMAC )
                 HotspotIntMAC=${HotspotIntOCMAC[1]}
-                HotspotSrv=`/bin/cat /root/script/hotspot | /bin/grep $line | /usr/bin/awk '{print($2)}'`
-                /bin/sed -i -e "/$1 $HotspotSrv/d" /root/script/mac
+                HotspotSrv=`/bin/cat /srv/hotspot/hotspot | /bin/grep $line | /usr/bin/awk '{print($2)}'`
+                /bin/sed -i -e "/$1 $HotspotSrv/d" /srv/hotspot/mac
                 /bin/echo "MAC is old, need to update"
-                /bin/echo "$1 $HotspotSrv $HotspotIntMAC $CurrentTime $CurrentCalc" >> /root/script/mac
+                /bin/echo "$1 $HotspotSrv $HotspotIntMAC $CurrentTime $CurrentCalc" >> /srv/hotspot/mac
             done
         else
             /bin/echo "MAC is ok, no need to update"
         fi
     else
-        /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot print > /root/script/hotspot
-        /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 inter pri deta > /root/script/interfaces
-        /bin/cat /root/script/hotspot | /bin/grep m | /usr/bin/awk '{print($3)}' | while read -r line; do
+        /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot print > /srv/hotspot/hotspot
+        /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 inter pri deta > /srv/hotspot/interfaces
+        /bin/cat /srv/hotspot/hotspot | /bin/grep m | /usr/bin/awk '{print($3)}' | while read -r line; do
             HotspotIntName=$line
-            HotspotIntMAC=`/bin/cat /root/script/interfaces | /bin/grep -A 1 $HotspotIntName | /usr/bin/awk '{print($1)}' | cut -d= -f2`
+            HotspotIntMAC=`/bin/cat /srv/hotspot/interfaces | /bin/grep -A 1 $HotspotIntName | /usr/bin/awk '{print($1)}' | cut -d= -f2`
             HotspotIntMAC=( $HotspotIntMAC )
             HotspotIntMAC=${HotspotIntMAC[1]}
-            HotspotSrv=`/bin/cat /root/script/hotspot | /bin/grep $line | /usr/bin/awk '{print($2)}'`
+            HotspotSrv=`/bin/cat /srv/hotspot/hotspot | /bin/grep $line | /usr/bin/awk '{print($2)}'`
             /bin/echo "Unknow IP $1, adding to base"
-            /bin/echo "$1 $HotspotSrv $HotspotIntMAC $CurrentTime $CurrentCalc" >> /root/script/mac
+            /bin/echo "$1 $HotspotSrv $HotspotIntMAC $CurrentTime $CurrentCalc" >> /srv/hotspot/mac
         done
     fi
 }
 
 function get_data {
-    /bin/echo "Getting $1 hotspot active devices"
-    /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot active pr > /root/script/active
-    /bin/echo "Getting $1 hotspot hosts details"
-    /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot host pr > /root/script/hosts
+#    /bin/echo "Getting $1 hotspot hosts details"
+    /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot host pr > /srv/hotspot/hosts
+#    /bin/echo "Getting $1 hotspot active devices"
+    /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 ip hot active pr > /srv/hotspot/active
+
 }
 
 function proc_active {
-    /bin/cat /root/script/active | /bin/grep h | while read -r line ; do
+    /bin/cat /srv/hotspot/active | /bin/grep 'h\|45m\|30m' | while read -r line ; do
         DeviceIP=`/bin/echo $line | /usr/bin/awk '{print($4)}'`
         DeviceUptime=`/bin/echo $line | /usr/bin/awk '{print($5)}'`
 
@@ -89,21 +90,21 @@ function proc_active {
         let UptimeCalc="$UptimeH * 3600 + $UptimeM * 60 + $UptimeS"
         let ConnCalc="$CurrentCalc - $UptimeCalc"
         ConnTime=`date -u -d @${ConnCalc} +%Y-%m-%d:%H:%M:%S`
-        DeviceMAC=`/bin/cat /root/script/hosts | /bin/grep "$DeviceIP " | /usr/bin/awk '{print($3)}'`
-        DeviceSrv=`/bin/cat /root/script/hosts | /bin/grep "$DeviceIP " | /usr/bin/awk '{print($6)}'`
-        HotspotIntMAC=`/bin/grep "$1 "  "/root/script/mac" | /bin/grep $DeviceSrv  | /usr/bin/awk '{print($3)}'`
-        /bin/echo "$HotspotIntMAC,$DeviceMAC,$DeviceUptime,$ConnTime,$CurrentTime" >> /root/script/output
+        DeviceMAC=`/bin/cat /srv/hotspot/hosts | /bin/grep "$DeviceIP " | /usr/bin/awk '{print($3)}'`
+        DeviceSrv=`/bin/cat /srv/hotspot/hosts | /bin/grep "$DeviceIP " | /usr/bin/awk '{print($6)}'`
+        HotspotIntMAC=`/bin/grep "$1 "  "/srv/hotspot/mac" | /bin/grep $DeviceSrv  | /usr/bin/awk '{print($3)}'`
+        /bin/echo "$HotspotIntMAC,$DeviceMAC,$DeviceUptime,$ConnTime,$CurrentTime" >> /srv/hotspot/$OutputName.txt
     done
 }
 
 function proc_hosts {
-    /bin/cat /root/script/hosts | /bin/grep 5m | while read -r line ; do
-        DeviceIP=`/bin/echo $line | /usr/bin/awk '{print($4)}'`
-        DeviceSrv=`/bin/cat /root/script/hosts | /bin/grep "$DeviceIP " | /usr/bin/awk '{print($6)}'`
-        HotspotIntMAC=`/bin/grep "$1 "  "/root/script/mac" | /bin/grep $DeviceSrv  | /usr/bin/awk '{print($3)}'`
+    /bin/cat /srv/hotspot/hosts | /bin/grep ' 5m' | while read -r line ; do
+        DeviceIP=`/bin/echo $line | /usr/bin/awk '{print($5)}'`
+        DeviceSrv=`/bin/cat /srv/hotspot/hosts | /bin/grep "$DeviceIP " | /usr/bin/awk '{print($6)}'`
+        HotspotIntMAC=`/bin/grep "$1 "  "/srv/hotspot/mac" | /bin/grep $DeviceSrv  | /usr/bin/awk '{print($3)}'`
         DeviceMAC=`/bin/echo $line | /usr/bin/awk '{print($3)}'`
         ConnStatus=`/bin/echo $line | /usr/bin/awk '{print($2)}'`
-        /bin/echo "$HotspotIntMAC,$DeviceMAC,$ConnStatus,unauthorised,$CurrentTime" >> /root/script/output
+        /bin/echo "$HotspotIntMAC,$DeviceMAC,$ConnStatus,unauthorised,$CurrentTime" >> /srv/hotspot/$OutputName.txt
     done
 }
 
@@ -111,21 +112,24 @@ PingResult=`/bin/ping -c 5 10.0.0.1 | /bin/grep loss | /usr/bin/awk '{print $4}'
 if [ $PingResult -le 2 ]
    then
         echo "$PingResult is not ok, restarting pptp"
-        /usr/bin/poff hotspot
-        /usr/bin/pon /etc/ppp/peers/hotspot
+        /usr/bin/poff
+        /usr/bin/pon hotspot
         /sbin/route add -net 10.0.0.0/8 ppp0
     /bin/sleep 5
+    else
+        echo "$PingResult is ok"
 fi
 
-echo "$PingResult is ok"
 
-for RBIP in $(/bin/cat /root/script/rb); do
+for RBIP in $(/bin/cat /srv/hotspot/rb); do
 
     /bin/echo "Processing $RBIP"
 
     #Getting current date and time in seconds and in human readable formats
     CurrentCalc=`date +%s`
     CurrentTime=`date +%Y-%m-%d:%H:%M:%S`
+    FileName=`date +%Y.%m.%d.%H.%M.%S`
+    OutputName=`date +%Y-%m-%d`
     /bin/echo $CurrentTime
 
     #Get hotpost mac
@@ -143,7 +147,7 @@ done
 echo "-----------------------------------------"
 
 #Delete temp files
-/bin/rm -f /root/script/hotspot
-/bin/rm -f /root/script/interfaces
-/bin/rm -f /root/script/active
-/bin/rm -f /root/script/hosts
+/bin/rm -f /srv/hotspot/hotspot
+/bin/rm -f /srv/hotspot/interfaces
+/bin/rm -f /srv/hotspot/active
+/bin/rm -f /srv/hotspot/hosts
