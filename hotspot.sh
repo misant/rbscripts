@@ -114,8 +114,11 @@ function proc_active {
         DeviceMAC=`/bin/cat /srv/hotspot/hosts | /bin/grep "$DeviceIP " | /usr/bin/awk '{print($3)}'`
         DeviceSrv=`/bin/cat /srv/hotspot/hosts | /bin/grep "$DeviceIP " | /usr/bin/awk '{print($6)}'`
         HotspotIntMAC=`/bin/grep "$1 "  "/srv/hotspot/mac" | /bin/grep $DeviceSrv  | /usr/bin/awk '{print($3)}'`
-        if [[ ! $DeviceMAC ]] || [[ ! $HotspotIntMAC ]]; then
+        if [[ ! $DeviceMAC ]] ; then
             echo "Error getting $DeviceIP MAC or something went wrong, active device"
+        fi
+        if [[ ! $HotspotIntMAC ]] ; then
+            echo "Error getting $1 MAC or something went wrong, active device"
         fi
         if [[ $DeviceMAC ]] || [[ $HotspotIntMAC ]]; then
             /bin/echo "$HotspotIntMAC,$DeviceMAC,$DeviceUptime,$ConnTime,$CurrentTime" >> /srv/hotspot/$OutputName.txt
@@ -131,11 +134,13 @@ function proc_hosts {
         HotspotIntMAC=`/bin/grep "$1 "  "/srv/hotspot/mac" | /bin/grep $DeviceSrv  | /usr/bin/awk '{print($3)}'`
         DeviceMAC=`/bin/echo $line | /usr/bin/awk '{print($3)}'`
         ConnStatus=`/bin/echo $line | /usr/bin/awk '{print($2)}'`
-        if [[ ! $DeviceMAC ]] || [[ ! $HotspotIntMAC ]]; then
-            echo "Error getting $DeviceIP MAC or something went wrong, nonactive device"
+        if [[ ! $DeviceMAC ]] ; then
+            echo "Error getting $DeviceIP MAC or something went wrong, active device"
         fi
-
-        if [[ ! $DeviceMAC ]] || [[ $HotspotIntMAC ]]; then
+        if [[ ! $HotspotIntMAC ]] ; then
+            echo "Error getting $1 MAC or something went wrong, active device"
+        fi
+        if [[  $DeviceMAC ]] || [[ $HotspotIntMAC ]]; then
             /bin/echo "$HotspotIntMAC,$DeviceMAC,$ConnStatus,unauthorised,$CurrentTime" >> /srv/hotspot/$OutputName.txt
         fi
 
@@ -182,3 +187,4 @@ for RBIP in $(/bin/cat /srv/hotspot/rb); do
 done
 
 echo "--------------END-OF-CHECK-------------------"
+
