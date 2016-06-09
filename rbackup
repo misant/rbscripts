@@ -1,34 +1,22 @@
 #!/bin/bash
 #################################
-#       Bekhterev Evgeniy       #
-#       ver 0.1                 #
-#       09.06.2016              #
-#       www.bekhterev.me        #
+#       Bekhterev Evgeniy # ver 0.1 # 09.06.2016 # www.bekhterev.me #
 #################################
-
-
 function get_data {
     /bin/echo "Getting $1 config"
-    /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 export verbose > /srv/$1.$FileName.cfg
-    
+    /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 export verbose > /srv/cfg/$1/$FileName.cfg
+
 }
-
-
 for RBIP in $(/bin/cat /srv/rb); do
-
     /bin/echo "Processing $RBIP"
-
     #Getting current date and time in seconds and in human readable formats
     CurrentCalc=`date +%s`
     CurrentTime=`date +%Y-%m-%d:%H:%M:%S`
     FileName=`date +%Y.%m.%d.%H.%M.%S`
     OutputName=`date +%Y-%m-%d`
-
     /bin/echo $CurrentTime
-  
+    [[ -d /srv/cfg/$RBIP/ ]] || mkdir /srv/cfg/$RBIP/
+
     get_data $RBIP
-
 done
-
 echo "-----------------------------------------"
-
