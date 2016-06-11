@@ -187,4 +187,3 @@ for RBIP in $(/bin/cat /srv/hotspot/rb); do
 done
 
 echo "--------------END-OF-CHECK-------------------"
-
