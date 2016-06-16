@@ -1,22 +1,56 @@
 #!/bin/bash
 #################################
-#       Bekhterev Evgeniy # ver 0.1 # 09.06.2016 # www.bekhterev.me #
+#       Bekhterev Evgeniy       #
+#       ver 0.2                 #
+#       16.06.2016              #
+#       www.bekhterev.me        #
 #################################
-function get_data {
-    /bin/echo "Getting $1 config"
-    /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 export verbose > /srv/cfg/$1/$FileName.cfg
 
+path="/srv/rb_backup"
+
+function get_data {
+    [[ -d $path/actual/ ]] || mkdir -p $path/actual/
+    [[ -d $path/tmp/$1/ ]] || mkdir -p $path/tmp/$1/
+
+    /bin/echo "Getting $1 config"
+    /usr/bin/ssh -o ConnectTimeout=3 -o BatchMode=yes -o StrictHostKeyChecking=no admin@$1 export verbose | grep -v "by RouterOS" >  $path/tmp/$1/$FileName.cfg
+
+    if grep -q "user aaa" "$path/tmp/$1/$FileName.cfg"; then
+        echo "Config from $1 is OK"
+        ID=`grep "set name" "$path/tmp/$1/$FileName.cfg" | cut -d"=" -f2 | tr -d '[:cntrl:]'`
+        echo "$1 is $ID"
+        [[ -d $path/cfg/$ID/ ]] || mkdir -p $path/cfg/$ID/
+        cp $path/tmp/$1/$FileName.cfg $path/cfg/$ID/$FileName.cfg
+        cp $path/tmp/$1/$FileName.cfg $path/actual/$ID.cfg
+        rm -rf $path/tmp/
+
+
+    else
+        echo "Error with configuration file $1"
+    fi
+
+    #Delete if not changed
+    md5sum $path/cfg/$ID/* | \
+    sort - | \
+    awk 'BEGIN{lasthash = ""} $1 == lasthash {print $2} {lasthash = $1}' | \
+    xargs rm -f
 }
-for RBIP in $(/bin/cat /srv/rb); do
+
+function get_files {
+    [[ -d $path/files/$ID/ ]] || mkdir -p $path/files/$ID/
+    scp -r admin@$1:/ $path/files/$ID/
+}
+
+echo "-----------------START---------------------"
+for RBIP in $(/bin/cat $path/rb); do
     /bin/echo "Processing $RBIP"
     #Getting current date and time in seconds and in human readable formats
-    CurrentCalc=`date +%s`
+#    CurrentCalc=`date +%s`
     CurrentTime=`date +%Y-%m-%d:%H:%M:%S`
     FileName=`date +%Y.%m.%d.%H.%M.%S`
-    OutputName=`date +%Y-%m-%d`
+#    OutputName=`date +%Y-%m-%d`
     /bin/echo $CurrentTime
-    [[ -d /srv/cfg/$RBIP/ ]] || mkdir /srv/cfg/$RBIP/
-
     get_data $RBIP
+    get_files $RBIP
 done
-echo "-----------------------------------------"
+echo "------------------END--------------------"
