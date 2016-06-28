@@ -14,12 +14,14 @@ import re
 import md5
 import hashlib
 
+sshCli = SSHClient()
+
 def getData( IP ):
     host = IP
     user = 'admin'
     port = 22
 
-    sshCli = SSHClient()
+#    sshCli = SSHClient()
     sshCli.set_missing_host_key_policy(AutoAddPolicy())
     remoteCmd = 'export verbose'
 
@@ -33,7 +35,9 @@ def getData( IP ):
             print "SSH connection failed"
         stdin, stdout, stderr = sshCli.exec_command(remoteCmd, timeout=15)
         data = stdout.read() + stderr.read()
-        sshCli.close()
+
+
+#        sshCli.close()
         if "user aaa" in data:
             print "Config is OK!"
             fileTmp = open(workDir + 'config.tmp', 'w')
@@ -62,16 +66,57 @@ def getData( IP ):
             move (workDir + 'config.tmp', devDir + timeStamp + '.cfg' )
 
 
+            fileDir = workDir + 'files/' + ID + "/"
+            if not os.path.exists(fileDir):
+                os.makedirs(fileDir)
+
+            print "Tranfering files..."
+
+
+            try:
+                copyFiles (fileDir)
+                print "Tranfering files success"
+            except:
+                print "Tansfering files FAIL"
+
+
+
         else:
             print "Config broken!"
+
+
+        sshCli.close()
 
     except:
         print "Error connecting to host", host
     print IP + " done.\n"
     return
 
-#def rm_duplicates(dir):
 
+
+def copyFiles(fileDir, Dir="/"):
+    sftp = sshCli.open_sftp()
+    dirlist = []
+
+
+    for i in sftp.listdir(Dir):
+        lstatout=str(sftp.lstat(Dir + '/' + i)).split()[0]
+        if 'd' in lstatout:
+            dirlist.append([i])
+
+        else:
+            sftp.get(Dir + i, fileDir + i)
+
+
+    for ed in dirlist:
+        ned=''.join(ed)
+        nfileDir = fileDir + ned + "/"
+        if not os.path.exists(fileDir + ned):
+            os.makedirs(fileDir + ned)
+        copyFiles (nfileDir, "/" + ned + "/")
+
+    sftp.close
+    return
 
 
 workDir = "/srv/py_backup/"
@@ -87,3 +132,10 @@ for line in listIP:
     line = re.sub("[^0-9.]", "", line)
     getData(line)
 fileIP.close()
+
+
+
+#Need to implement duplicats deletion
+#rm_duplicates("/srv/py_backup/cfg/gwdf/")
+#LS = os.listdir(workDir + "cfg/gwdf/")
+#print LS
